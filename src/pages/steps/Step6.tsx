@@ -94,7 +94,7 @@ const Step6: React.FC = () => {
       {/* Audio element para som de vibração */}
       <audio
         ref={audioRef}
-        src="https://rr1---sn-p5qlsnee.googlevideo.com/videoplayback?expire=1735689600&ei=test&ip=0.0.0.0&id=o-test&itag=18&source=youtube&requiressl=yes&mh=test&mm=31&mn=sn-p5qlsnee&ms=lfo&mv=u&mvi=1&pl=24&initcwndbps=1234560&vprv=1&mime=video/mp4&ns=test&gir=yes&clen=1000000&dur=10&lmt=1234567890&mt=1234567890&fvip=1&keepalive=yes&fexp=24007246&c=WEB&txp=5432100&n=test&sparams=expire,ei,ip,id,itag,source,requiressl,mh,mm,mn,ms,mv,mvi,pl,initcwndbps,vprv,mime,ns,gir,clen,dur,lmt&sig=test&rn=test&rbuf=0"
+        src="https://screenapp.io/app/v/h0seYLRagz"
         preload="auto"
       />
 
