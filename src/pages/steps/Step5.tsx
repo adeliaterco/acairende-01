@@ -2,79 +2,72 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFunnel } from '@/context/FunnelContext';
 import StepLayout from '@/components/funnel/StepLayout';
-import CTAButton from '@/components/funnel/CTAButton';
-import { Heart, MessageCircle, Share2, Music } from 'lucide-react';
+import { Phone, PhoneOff, MessageCircle, Video } from 'lucide-react';
 
-const Step5: React.FC = () => {
+const Step6: React.FC = () => {
   const navigate = useNavigate();
-  const { addPoints, completeStep } = useFunnel();
+  const { completeStep } = useFunnel();
 
-  const handleContinue = () => {
-    addPoints(50);
-    completeStep(5);
-    navigate('/step/6');
+  const handleAnswer = () => {
+    completeStep(6);
+    navigate('/step/7');
   };
 
   return (
-    <StepLayout>
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-[400px] aspect-[9/16] bg-gradient-to-b from-purple-900/50 to-funnel-bg rounded-2xl relative overflow-hidden border border-funnel-border">
-          {/* TikTok header */}
-          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
-            <span className="text-funnel-text font-medium">Following</span>
-            <span className="text-funnel-text font-bold border-b-2 border-funnel-text">For You</span>
-            <span className="text-funnel-text">🔍</span>
+    <StepLayout showBack={false}>
+      <div className="flex-1 flex flex-col bg-gradient-to-b from-funnel-primary/30 to-funnel-bg items-center justify-center p-6">
+        {/* Profile picture */}
+        <div className="mb-6">
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-4 border-funnel-text/20">
+            <span className="text-5xl">👩‍🍳</span>
           </div>
+        </div>
 
-          {/* Video placeholder */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-32 h-32 bg-funnel-primary/30 rounded-full flex items-center justify-center mb-4 mx-auto">
-                <div className="w-0 h-0 border-t-[20px] border-t-transparent border-l-[35px] border-l-funnel-text border-b-[20px] border-b-transparent ml-2" />
-              </div>
-              <p className="text-funnel-text text-xl font-bold">Açaí na Garrafa</p>
-              <p className="text-funnel-success font-semibold mt-2">Do ZERO a R$5.000/mês</p>
-            </div>
-          </div>
+        {/* Caller info */}
+        <div className="text-center mb-12">
+          <h2 className="text-funnel-text text-2xl font-bold mb-1">@andreia.conf</h2>
+          <p className="text-funnel-muted">Chamada de áudio...</p>
+        </div>
 
-          {/* Right side actions */}
-          <div className="absolute right-4 bottom-40 flex flex-col gap-5">
-            <div className="w-12 h-12 rounded-full bg-funnel-primary border-2 border-funnel-text overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500" />
+        {/* Call actions */}
+        <div className="flex items-center gap-8">
+          <button className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-full bg-funnel-card border border-funnel-border flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-funnel-text" />
             </div>
-            <div className="flex flex-col items-center">
-              <Heart className="w-8 h-8 text-funnel-text fill-funnel-danger" />
-              <span className="text-funnel-text text-xs mt-1">12.8K</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <MessageCircle className="w-8 h-8 text-funnel-text" />
-              <span className="text-funnel-text text-xs mt-1">2.4K</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Share2 className="w-8 h-8 text-funnel-text" />
-              <span className="text-funnel-text text-xs mt-1">Share</span>
-            </div>
-          </div>
+            <span className="text-funnel-muted text-xs">Mensagem</span>
+          </button>
 
-          {/* Bottom info */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-            <p className="text-funnel-text font-semibold mb-1">@andreia.conf</p>
-            <p className="text-funnel-text text-sm mb-3">
-              Do ZERO a R$5.000/mês vendendo açaí na garrafa 🍇💰 #empreendedorismo #acai
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-              <Music className="w-4 h-4 text-funnel-text" />
-              <p className="text-funnel-text text-xs">Som original - @andreia.conf</p>
+          <button
+            onClick={handleAnswer}
+            className="flex flex-col items-center gap-2"
+          >
+            <div className="w-20 h-20 rounded-full bg-funnel-success flex items-center justify-center animate-pulse hover:scale-105 transition-transform">
+              <Phone className="w-10 h-10 text-black" />
             </div>
-            
-            <CTAButton onClick={handleContinue} variant="success" className="w-full">
-              Continuar
-            </CTAButton>
-          </div>
+            <span className="text-funnel-success text-sm font-medium">Atender</span>
+          </button>
+
+          <button className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-full bg-funnel-danger flex items-center justify-center">
+              <PhoneOff className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-funnel-muted text-xs">Recusar</span>
+          </button>
+        </div>
+
+        {/* Bottom actions */}
+        <div className="mt-12 flex items-center gap-6">
+          <button className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-funnel-card border border-funnel-border flex items-center justify-center">
+              <Video className="w-5 h-5 text-funnel-text" />
+            </div>
+            <span className="text-funnel-muted text-xs">Vídeo</span>
+          </button>
         </div>
       </div>
     </StepLayout>
   );
 };
 
-export default Step5;
+export default Step6;
