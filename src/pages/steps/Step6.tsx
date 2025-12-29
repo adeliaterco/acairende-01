@@ -1,80 +1,248 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFunnel } from '@/context/FunnelContext';
-import StepLayout from '@/components/funnel/StepLayout';
-import CTAButton from '@/components/funnel/CTAButton';
-import { Heart, MessageCircle, Share2, Music } from 'lucide-react';
+import { Phone, PhoneOff, MessageCircle, Video, Signal, Wifi, Battery } from 'lucide-react';
 
-const Step5: React.FC = () => {
+const Step6: React.FC = () => {
   const navigate = useNavigate();
-  const { addPoints, completeStep } = useFunnel();
+  const { completeStep } = useFunnel();
+  
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleContinue = () => {
-    addPoints(50);
-    completeStep(5);
-    navigate('/step/6');
+  // Atualizar hora em tempo real
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      setCurrentTime(`${hours}:${minutes}`);
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Iniciar vibração e som de chamada
+  useEffect(() => {
+    if (isAnswered) return;
+
+    // Som de chamada em loop
+    if (audioRef.current) {
+      audioRef.current.loop = true;
+      audioRef.current.play().catch(err => console.error('Erro ao tocar som:', err));
+    }
+
+    // Vibração contínua
+    const startVibration = () => {
+      if (navigator.vibrate) {
+        vibrationIntervalRef.current = setInterval(() => {
+          // Padrão de vibração: 200ms vibra, 100ms pausa, 200ms vibra, 300ms pausa
+          navigator.vibrate([200, 100, 200, 300]);
+        }, 800);
+      }
+    };
+
+    startVibration();
+
+    // Cleanup
+    return () => {
+      if (vibrationIntervalRef.current) {
+        clearInterval(vibrationIntervalRef.current);
+      }
+      if (navigator.vibrate) {
+        navigator.vibrate(0); // Para a vibração
+      }
+    };
+  }, [isAnswered]);
+
+  const handleAnswer = () => {
+    // Parar vibração
+    if (vibrationIntervalRef.current) {
+      clearInterval(vibrationIntervalRef.current);
+    }
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+
+    // Parar som
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    setIsAnswered(true);
+
+    // Pequeno delay para transição suave
+    setTimeout(() => {
+      completeStep(6);
+      navigate('/step/7');
+    }, 500);
+  };
+
+  const handleReject = () => {
+    // Parar vibração
+    if (vibrationIntervalRef.current) {
+      clearInterval(vibrationIntervalRef.current);
+    }
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+
+    // Parar som
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    setIsAnswered(true);
+    setTimeout(() => {
+      navigate('/step/1');
+    }, 500);
   };
 
   return (
-    <StepLayout>
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-[400px] aspect-[9/16] bg-gradient-to-b from-purple-900/50 to-funnel-bg rounded-2xl relative overflow-hidden border border-funnel-border">
-          {/* TikTok header */}
-          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
-            <span className="text-funnel-text font-medium">Following</span>
-            <span className="text-funnel-text font-bold border-b-2 border-funnel-text">For You</span>
-            <span className="text-funnel-text">🔍</span>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
+      {/* Audio element para som de chamada */}
+      <audio
+        ref={audioRef}
+        src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+        preload="auto"
+      />
 
-          {/* Video placeholder */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-32 h-32 bg-funnel-primary/30 rounded-full flex items-center justify-center mb-4 mx-auto">
-                <div className="w-0 h-0 border-t-[20px] border-t-transparent border-l-[35px] border-l-funnel-text border-b-[20px] border-b-transparent ml-2" />
-              </div>
-              <p className="text-funnel-text text-xl font-bold">Açaí na Garrafa</p>
-              <p className="text-funnel-success font-semibold mt-2">Do ZERO a R$5.000/mês</p>
-            </div>
+      {/* Status Bar - Estilo iOS */}
+      <div className="relative z-50 bg-black/40 backdrop-blur-xl">
+        {/* Notch */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-black rounded-b-3xl"></div>
+        
+        {/* Status Bar Content */}
+        <div className="flex items-center justify-between px-6 pt-3 pb-2 text-white text-sm font-medium">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">{currentTime}</span>
           </div>
-
-          {/* Right side actions */}
-          <div className="absolute right-4 bottom-40 flex flex-col gap-5">
-            <div className="w-12 h-12 rounded-full bg-funnel-primary border-2 border-funnel-text overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500" />
-            </div>
-            <div className="flex flex-col items-center">
-              <Heart className="w-8 h-8 text-funnel-text fill-funnel-danger" />
-              <span className="text-funnel-text text-xs mt-1">12.8K</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <MessageCircle className="w-8 h-8 text-funnel-text" />
-              <span className="text-funnel-text text-xs mt-1">2.4K</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Share2 className="w-8 h-8 text-funnel-text" />
-              <span className="text-funnel-text text-xs mt-1">Share</span>
-            </div>
-          </div>
-
-          {/* Bottom info */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-            <p className="text-funnel-text font-semibold mb-1">@andreia.conf</p>
-            <p className="text-funnel-text text-sm mb-3">
-              Do ZERO a R$5.000/mês vendendo açaí na garrafa 🍇💰 #empreendedorismo #acai
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-              <Music className="w-4 h-4 text-funnel-text" />
-              <p className="text-funnel-text text-xs">Som original - @andreia.conf</p>
-            </div>
-            
-            <CTAButton onClick={handleContinue} variant="success" className="w-full">
-              Continuar
-            </CTAButton>
+          
+          <div className="flex items-center gap-1.5">
+            <Signal className="w-4 h-4" />
+            <Wifi className="w-4 h-4" />
+            <Battery className="w-5 h-5" />
           </div>
         </div>
       </div>
-    </StepLayout>
+
+      {/* Call Screen Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+        {/* Profile Picture com efeito de vibração */}
+        <div className={`mb-8 ${!isAnswered ? 'animate-vibrate' : ''}`}>
+          <div className="w-40 h-40 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-4 border-white/20 shadow-2xl">
+            <span className="text-7xl">👩‍🍳</span>
+          </div>
+        </div>
+
+        {/* Caller Info */}
+        <div className="text-center mb-12">
+          <h2 className="text-white text-3xl font-bold mb-2">@andreia.conf</h2>
+          <p className={`text-white/70 text-lg font-medium ${!isAnswered ? 'animate-pulse' : ''}`}>
+            {isAnswered ? 'Chamada conectada...' : 'Chamada de áudio...'}
+          </p>
+        </div>
+
+        {/* Call Actions */}
+        <div className="flex items-center justify-center gap-12 mb-12">
+          {/* Message Button */}
+          <button className="flex flex-col items-center gap-2 hover:scale-110 transition-transform">
+            <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center">
+              <MessageCircle className="w-7 h-7 text-white" />
+            </div>
+            <span className="text-white/60 text-xs font-medium">Mensagem</span>
+          </button>
+
+          {/* Answer Button */}
+          <button
+            onClick={handleAnswer}
+            disabled={isAnswered}
+            className={`flex flex-col items-center gap-2 ${!isAnswered ? 'hover:scale-110' : ''} transition-transform`}
+          >
+            <div className={`w-24 h-24 rounded-full bg-green-500 flex items-center justify-center shadow-2xl ${!isAnswered ? 'animate-pulse-strong' : 'bg-opacity-50'}`}>
+              <Phone className="w-12 h-12 text-white" />
+            </div>
+            <span className="text-green-400 text-sm font-bold">Atender</span>
+          </button>
+
+          {/* Reject Button */}
+          <button
+            onClick={handleReject}
+            disabled={isAnswered}
+            className="flex flex-col items-center gap-2 hover:scale-110 transition-transform"
+          >
+            <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl">
+              <PhoneOff className="w-7 h-7 text-white" />
+            </div>
+            <span className="text-red-400 text-xs font-medium">Recusar</span>
+          </button>
+        </div>
+
+        {/* Video Button */}
+        <button className="flex flex-col items-center gap-2 hover:scale-110 transition-transform">
+          <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center">
+            <Video className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-white/60 text-xs font-medium">Vídeo</span>
+        </button>
+      </div>
+
+      {/* Home Indicator */}
+      <div className="flex justify-center pb-2">
+        <div className="w-32 h-1 bg-white/30 rounded-full"></div>
+      </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes vibrate {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          10% {
+            transform: translateX(-3px);
+          }
+          20% {
+            transform: translateX(3px);
+          }
+          30% {
+            transform: translateX(-3px);
+          }
+          40% {
+            transform: translateX(3px);
+          }
+          50% {
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes pulse-strong {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.05);
+          }
+        }
+
+        .animate-vibrate {
+          animation: vibrate 0.8s infinite;
+        }
+
+        .animate-pulse-strong {
+          animation: pulse-strong 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default Step5;
+export default Step6;
