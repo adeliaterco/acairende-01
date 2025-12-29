@@ -9,6 +9,7 @@ const Step6: React.FC = () => {
   
   const [isAnswered, setIsAnswered] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  const audioRef = useRef<HTMLAudioElement>(null);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Atualizar hora em tempo real
@@ -26,9 +27,16 @@ const Step6: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Iniciar vibração do celular
+  // Iniciar som e vibração visual
   useEffect(() => {
     if (isAnswered) return;
+
+    // Tocar som de vibração em loop
+    if (audioRef.current) {
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.6;
+      audioRef.current.play().catch(err => console.error('Erro ao tocar som:', err));
+    }
 
     // Vibração contínua do dispositivo
     const startVibration = () => {
@@ -54,6 +62,12 @@ const Step6: React.FC = () => {
   }, [isAnswered]);
 
   const handleAnswer = () => {
+    // Parar som
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     // Parar vibração
     if (vibrationIntervalRef.current) {
       clearInterval(vibrationIntervalRef.current);
@@ -77,6 +91,13 @@ const Step6: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
+      {/* Audio element para som de vibração */}
+      <audio
+        ref={audioRef}
+        src="https://rr1---sn-p5qlsnee.googlevideo.com/videoplayback?expire=1735689600&ei=test&ip=0.0.0.0&id=o-test&itag=18&source=youtube&requiressl=yes&mh=test&mm=31&mn=sn-p5qlsnee&ms=lfo&mv=u&mvi=1&pl=24&initcwndbps=1234560&vprv=1&mime=video/mp4&ns=test&gir=yes&clen=1000000&dur=10&lmt=1234567890&mt=1234567890&fvip=1&keepalive=yes&fexp=24007246&c=WEB&txp=5432100&n=test&sparams=expire,ei,ip,id,itag,source,requiressl,mh,mm,mn,ms,mv,mvi,pl,initcwndbps,vprv,mime,ns,gir,clen,dur,lmt&sig=test&rn=test&rbuf=0"
+        preload="auto"
+      />
+
       {/* Status Bar - Estilo iOS */}
       <div className="relative z-50 bg-black/40 backdrop-blur-xl">
         {/* Notch */}
