@@ -26,17 +26,17 @@ const Step6: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Iniciar vibração
+  // Iniciar vibração do celular
   useEffect(() => {
     if (isAnswered) return;
 
-    // Vibração contínua
+    // Vibração contínua do dispositivo
     const startVibration = () => {
       if (navigator.vibrate) {
         vibrationIntervalRef.current = setInterval(() => {
-          // Padrão de vibração: 200ms vibra, 100ms pausa, 200ms vibra, 300ms pausa
-          navigator.vibrate([200, 100, 200, 300]);
-        }, 800);
+          // Padrão realista de vibração de chamada: vibra 400ms, pausa 200ms, vibra 400ms, pausa 500ms
+          navigator.vibrate([400, 200, 400, 500]);
+        }, 1500);
       }
     };
 
@@ -71,6 +71,10 @@ const Step6: React.FC = () => {
     }, 500);
   };
 
+  const handleReject = () => {
+    // Não faz nada - botão inativo
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
       {/* Status Bar - Estilo iOS */}
@@ -94,7 +98,7 @@ const Step6: React.FC = () => {
 
       {/* Call Screen Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
-        {/* Profile Picture com efeito de vibração */}
+        {/* Profile Picture com efeito de vibração visual */}
         <div className={`mb-8 ${!isAnswered ? 'animate-vibrate' : ''}`}>
           <div className="w-40 h-40 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-4 border-white/20 shadow-2xl">
             <span className="text-7xl">👩‍🍳</span>
@@ -131,15 +135,15 @@ const Step6: React.FC = () => {
             <span className="text-green-400 text-sm font-bold">Atender</span>
           </button>
 
-          {/* Reject Button - Desabilitado */}
+          {/* Reject Button - Visível mas inativo */}
           <button
-            disabled
-            className="flex flex-col items-center gap-2 opacity-50 cursor-not-allowed"
+            onClick={handleReject}
+            className="flex flex-col items-center gap-2 hover:scale-110 transition-transform"
           >
-            <div className="w-16 h-16 rounded-full bg-red-500/50 flex items-center justify-center shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl">
               <PhoneOff className="w-7 h-7 text-white" />
             </div>
-            <span className="text-red-400/50 text-xs font-medium">Recusar</span>
+            <span className="text-red-400 text-xs font-medium">Recusar</span>
           </button>
         </div>
 
