@@ -1,25 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFunnel } from '@/context/FunnelContext';
-import StepLayout from '@/components/funnel/StepLayout';
-import PointsBadge from '@/components/funnel/PointsBadge';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Wifi, Battery, Signal } from 'lucide-react';
 
 const notifications = [
   {
-    id: 'whatsapp',
-    app: 'WhatsApp',
-    color: 'bg-funnel-whatsapp',
-    icon: MessageCircle,
-    title: 'Confeitaria Andreia',
-    message: 'Destravar vendas de açaí agora...',
-    time: 'Agora',
-    isClickable: true,
-  },
-  {
     id: 'nubank1',
     app: 'Nubank',
-    color: 'bg-funnel-nubank',
+    color: 'bg-[#820AD1]',
     title: 'Transferência recebida',
     message: 'R$ 32,00 de Maria Silva',
     time: '2 min',
@@ -28,7 +16,7 @@ const notifications = [
   {
     id: 'nubank2',
     app: 'Nubank',
-    color: 'bg-funnel-nubank',
+    color: 'bg-[#820AD1]',
     title: 'Transferência recebida',
     message: 'R$ 33,00 de João Santos',
     time: '5 min',
@@ -37,17 +25,95 @@ const notifications = [
   {
     id: 'nubank3',
     app: 'Nubank',
-    color: 'bg-funnel-nubank',
+    color: 'bg-[#820AD1]',
     title: 'Transferência recebida',
     message: 'R$ 32,50 de Ana Paula',
     time: '8 min',
     isClickable: false,
+  },
+  {
+    id: 'nubank4',
+    app: 'Nubank',
+    color: 'bg-[#820AD1]',
+    title: 'Transferência recebida',
+    message: 'R$ 34,50 de Carlos Mendes',
+    time: '11 min',
+    isClickable: false,
+  },
+  {
+    id: 'nubank5',
+    app: 'Nubank',
+    color: 'bg-[#820AD1]',
+    title: 'Transferência recebida',
+    message: 'R$ 31,80 de Fernanda Costa',
+    time: '14 min',
+    isClickable: false,
+  },
+  {
+    id: 'nubank6',
+    app: 'Nubank',
+    color: 'bg-[#820AD1]',
+    title: 'Transferência recebida',
+    message: 'R$ 33,20 de Roberto Lima',
+    time: '17 min',
+    isClickable: false,
+  },
+  {
+    id: 'whatsapp',
+    app: 'WhatsApp',
+    color: 'bg-[#25D366]',
+    icon: MessageCircle,
+    title: 'Confeitaria Andreia',
+    message: 'Destravar vendas de açaí agora...',
+    time: 'Agora',
+    isClickable: true,
   },
 ];
 
 const Step3: React.FC = () => {
   const navigate = useNavigate();
   const { addPoints, completeStep } = useFunnel();
+  
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [currentTime, setCurrentTime] = useState('');
+  
+  const notificationSound = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
+
+  // Atualizar hora em tempo real
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      setCurrentTime(`${hours}:${minutes}`);
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Animação sequencial das notificações
+  useEffect(() => {
+    const timeouts: NodeJS.Timeout[] = [];
+
+    notifications.forEach((_, index) => {
+      const timeout = setTimeout(() => {
+        setVisibleCount(prev => prev + 1);
+        
+        const audio = new Audio(notificationSound);
+        audio.volume = 0.5;
+        audio.play().catch(err => console.error('Erro ao tocar som:', err));
+      }, index * 800);
+      
+      timeouts.push(timeout);
+    });
+
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const handleWhatsAppClick = () => {
     addPoints(50);
@@ -56,60 +122,135 @@ const Step3: React.FC = () => {
   };
 
   return (
-    <StepLayout>
-      <div className="flex-1 flex flex-col p-6">
-        <div className="flex justify-center mb-6 pt-4">
-          <PointsBadge />
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
+      {/* Status Bar - Estilo iOS */}
+      <div className="relative z-50 bg-black/40 backdrop-blur-xl">
+        {/* Notch */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-black rounded-b-3xl"></div>
         
-        <div className="text-center mb-6">
-          <p className="text-funnel-muted text-sm">Terça-feira, 14:32</p>
-          <h2 className="text-funnel-text text-lg font-medium mt-1">Notificações</h2>
+        {/* Status Bar Content */}
+        <div className="flex items-center justify-between px-6 pt-3 pb-2 text-white text-sm font-medium">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">{currentTime}</span>
+          </div>
+          
+          <div className="flex items-center gap-1.5">
+            <Signal className="w-4 h-4" />
+            <Wifi className="w-4 h-4" />
+            <Battery className="w-5 h-5" />
+          </div>
         </div>
-        
-        <div className="flex-1 flex flex-col gap-3 max-w-md mx-auto w-full">
-          {notifications.map((notif, index) => (
+      </div>
+
+      {/* Lock Screen Content */}
+      <div className="flex-1 flex flex-col px-4 pt-12 pb-8 overflow-y-auto">
+        {/* Data e Hora Central */}
+        <div className="text-center mb-8">
+          <h1 className="text-white text-7xl font-light tracking-tight mb-1">
+            {currentTime}
+          </h1>
+          <p className="text-white/70 text-lg font-medium">
+            Terça-feira, 28 de Janeiro
+          </p>
+        </div>
+
+        {/* Notificações */}
+        <div className="flex flex-col gap-2 max-w-md mx-auto w-full">
+          {visibleCount > 0 && (
+            <div className="mb-3">
+              <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider px-4">
+                Notificações
+              </h2>
+            </div>
+          )}
+
+          {notifications.slice(0, visibleCount).map((notif, index) => (
             <div
               key={notif.id}
               onClick={notif.isClickable ? handleWhatsAppClick : undefined}
               className={`
-                p-4 rounded-xl bg-funnel-card border border-funnel-border
-                animate-fade-in
-                ${notif.isClickable ? 'cursor-pointer hover:bg-funnel-card/80 transition-colors ring-2 ring-funnel-success/50' : 'opacity-90'}
+                bg-white/10 backdrop-blur-2xl rounded-2xl p-4
+                border border-white/20 shadow-2xl
+                transform transition-all duration-300
+                ${notif.isClickable ? 'cursor-pointer hover:bg-white/15 hover:scale-[1.02] ring-2 ring-green-400/50' : ''}
               `}
-              style={{ animationDelay: `${index * 100}ms` }}
+              style={{
+                animation: 'slideDown 0.4s ease-out',
+              }}
             >
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${notif.color}`}>
+                {/* App Icon */}
+                <div className={`${notif.color} rounded-xl p-2.5 shadow-lg flex-shrink-0`}>
                   {notif.icon ? (
-                    <notif.icon className="w-5 h-5 text-white" />
+                    <notif.icon className="w-6 h-6 text-white" />
                   ) : (
-                    <div className="w-5 h-5 flex items-center justify-center text-white font-bold text-xs">
+                    <div className="w-6 h-6 flex items-center justify-center text-white font-bold text-sm">
                       Nu
                     </div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-funnel-text font-semibold text-sm">{notif.app}</span>
-                    <span className="text-funnel-muted text-xs">{notif.time}</span>
+
+                {/* Notification Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white font-semibold text-sm">
+                      {notif.app}
+                    </span>
+                    <span className="text-white/50 text-xs font-medium">
+                      {notif.time}
+                    </span>
                   </div>
-                  <p className="text-funnel-text font-medium text-sm mt-1">{notif.title}</p>
-                  <p className="text-funnel-muted text-sm">{notif.message}</p>
+                  <p className="text-white text-sm font-medium mb-0.5">
+                    {notif.title}
+                  </p>
+                  <p className="text-white/70 text-sm">
+                    {notif.message}
+                  </p>
                 </div>
               </div>
+
               {notif.isClickable && (
-                <div className="mt-3 text-center">
-                  <span className="text-funnel-success text-xs font-medium animate-pulse">
-                    Toque para abrir
-                  </span>
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <div className="text-center">
+                    <span className="text-green-400 text-sm font-semibold animate-pulse">
+                      Toque para abrir →
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
           ))}
         </div>
+
+        {/* Dica de deslizar (aparece após todas as notificações) */}
+        {visibleCount >= notifications.length && (
+          <div className="mt-8 text-center animate-bounce">
+            <p className="text-white/40 text-xs font-medium">
+              Deslize para cima para desbloquear
+            </p>
+          </div>
+        )}
       </div>
-    </StepLayout>
+
+      {/* Home Indicator - Barra inferior do iPhone */}
+      <div className="flex justify-center pb-2">
+        <div className="w-32 h-1 bg-white/30 rounded-full"></div>
+      </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 
