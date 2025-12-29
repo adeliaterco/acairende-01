@@ -7,16 +7,6 @@ import { MessageCircle } from 'lucide-react';
 
 const notifications = [
   {
-    id: 'whatsapp',
-    app: 'WhatsApp',
-    color: 'bg-funnel-whatsapp',
-    icon: MessageCircle,
-    title: 'Confeitaria Andreia',
-    message: 'Destravar vendas de açaí agora...',
-    time: 'Agora',
-    isClickable: true,
-  },
-  {
     id: 'nubank1',
     app: 'Nubank',
     color: 'bg-funnel-nubank',
@@ -70,6 +60,16 @@ const notifications = [
     time: '17 min',
     isClickable: false,
   },
+  {
+    id: 'whatsapp',
+    app: 'WhatsApp',
+    color: 'bg-funnel-whatsapp',
+    icon: MessageCircle,
+    title: 'Confeitaria Andreia',
+    message: 'Destravar vendas de açaí agora...',
+    time: 'Agora',
+    isClickable: true,
+  },
 ];
 
 const Step3: React.FC = () => {
@@ -94,7 +94,7 @@ const Step3: React.FC = () => {
         const audio = new Audio(notificationSound);
         audio.volume = 0.5; // Volume a 50%
         audio.play().catch(err => console.error('Erro ao tocar som:', err));
-      }, index * 1500); // 1.5 segundos entre cada notificação
+      }, index * 800); // 0.8 segundos entre cada notificação (mais rápido)
       
       timeouts.push(timeout);
     });
