@@ -9,9 +9,7 @@ const Step6: React.FC = () => {
   
   const [isAnswered, setIsAnswered] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
-  const [vibrationSupported, setVibrationSupported] = useState(false);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const vibrationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Atualizar hora em tempo real
   useEffect(() => {
@@ -28,59 +26,40 @@ const Step6: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Verificar suporte a vibração e iniciar
+  // Iniciar vibração do celular
   useEffect(() => {
-    // Verificar se a API de vibração está disponível
-    const hasVibration = !!(navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate);
-    setVibrationSupported(hasVibration);
+    if (isAnswered) return;
 
-    if (isAnswered || !hasVibration) return;
-
-    // Função para executar vibração
-    const triggerVibration = () => {
-      const vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-      if (vibrate) {
-        // Padrão de vibração realista: 400ms vibra, 200ms pausa, 400ms vibra, 500ms pausa
-        vibrate.call(navigator, [400, 200, 400, 500]);
+    // Vibração contínua do dispositivo
+    const startVibration = () => {
+      if (navigator.vibrate) {
+        vibrationIntervalRef.current = setInterval(() => {
+          // Padrão realista de vibração de chamada: vibra 400ms, pausa 200ms, vibra 400ms, pausa 500ms
+          navigator.vibrate([400, 200, 400, 500]);
+        }, 1500);
       }
     };
 
-    // Iniciar vibração imediatamente
-    triggerVibration();
-
-    // Continuar vibrando a cada 1.5 segundos
-    vibrationIntervalRef.current = setInterval(() => {
-      triggerVibration();
-    }, 1500);
+    startVibration();
 
     // Cleanup
     return () => {
       if (vibrationIntervalRef.current) {
         clearInterval(vibrationIntervalRef.current);
       }
-      if (vibrationTimeoutRef.current) {
-        clearTimeout(vibrationTimeoutRef.current);
-      }
-      // Parar vibração
-      const vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-      if (vibrate) {
-        vibrate.call(navigator, 0);
+      if (navigator.vibrate) {
+        navigator.vibrate(0); // Para a vibração
       }
     };
   }, [isAnswered]);
 
   const handleAnswer = () => {
-    // Parar vibração imediatamente
+    // Parar vibração
     if (vibrationIntervalRef.current) {
       clearInterval(vibrationIntervalRef.current);
     }
-    if (vibrationTimeoutRef.current) {
-      clearTimeout(vibrationTimeoutRef.current);
-    }
-
-    const vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
-    if (vibrate) {
-      vibrate.call(navigator, 0);
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
     }
 
     setIsAnswered(true);
@@ -119,13 +98,6 @@ const Step6: React.FC = () => {
 
       {/* Call Screen Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
-        {/* Indicador de Vibração (debug) */}
-        {!vibrationSupported && (
-          <div className="absolute top-24 bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 px-4 py-2 rounded-lg text-xs font-medium">
-            ⚠️ Vibração não suportada neste dispositivo
-          </div>
-        )}
-
         {/* Profile Picture com efeito de vibração visual */}
         <div className={`mb-8 ${!isAnswered ? 'animate-vibrate' : ''}`}>
           <div className="w-40 h-40 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-4 border-white/20 shadow-2xl">
