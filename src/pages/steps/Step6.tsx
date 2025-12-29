@@ -9,7 +9,6 @@ const Step6: React.FC = () => {
   
   const [isAnswered, setIsAnswered] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
-  const audioRef = useRef<HTMLAudioElement>(null);
   const vibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Atualizar hora em tempo real
@@ -27,15 +26,9 @@ const Step6: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Iniciar vibração e som de chamada
+  // Iniciar vibração
   useEffect(() => {
     if (isAnswered) return;
-
-    // Som de chamada em loop
-    if (audioRef.current) {
-      audioRef.current.loop = true;
-      audioRef.current.play().catch(err => console.error('Erro ao tocar som:', err));
-    }
 
     // Vibração contínua
     const startVibration = () => {
@@ -69,12 +62,6 @@ const Step6: React.FC = () => {
       navigator.vibrate(0);
     }
 
-    // Parar som
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-
     setIsAnswered(true);
 
     // Pequeno delay para transição suave
@@ -84,36 +71,8 @@ const Step6: React.FC = () => {
     }, 500);
   };
 
-  const handleReject = () => {
-    // Parar vibração
-    if (vibrationIntervalRef.current) {
-      clearInterval(vibrationIntervalRef.current);
-    }
-    if (navigator.vibrate) {
-      navigator.vibrate(0);
-    }
-
-    // Parar som
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-
-    setIsAnswered(true);
-    setTimeout(() => {
-      navigate('/step/1');
-    }, 500);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex flex-col overflow-hidden">
-      {/* Audio element para som de chamada */}
-      <audio
-        ref={audioRef}
-        src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
-        preload="auto"
-      />
-
       {/* Status Bar - Estilo iOS */}
       <div className="relative z-50 bg-black/40 backdrop-blur-xl">
         {/* Notch */}
@@ -172,16 +131,15 @@ const Step6: React.FC = () => {
             <span className="text-green-400 text-sm font-bold">Atender</span>
           </button>
 
-          {/* Reject Button */}
+          {/* Reject Button - Desabilitado */}
           <button
-            onClick={handleReject}
-            disabled={isAnswered}
-            className="flex flex-col items-center gap-2 hover:scale-110 transition-transform"
+            disabled
+            className="flex flex-col items-center gap-2 opacity-50 cursor-not-allowed"
           >
-            <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-red-500/50 flex items-center justify-center shadow-2xl">
               <PhoneOff className="w-7 h-7 text-white" />
             </div>
-            <span className="text-red-400 text-xs font-medium">Recusar</span>
+            <span className="text-red-400/50 text-xs font-medium">Recusar</span>
           </button>
         </div>
 
