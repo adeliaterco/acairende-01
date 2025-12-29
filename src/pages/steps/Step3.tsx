@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFunnel } from '@/context/FunnelContext';
 import StepLayout from '@/components/funnel/StepLayout';
@@ -6,6 +6,16 @@ import PointsBadge from '@/components/funnel/PointsBadge';
 import { MessageCircle } from 'lucide-react';
 
 const notifications = [
+  {
+    id: 'whatsapp',
+    app: 'WhatsApp',
+    color: 'bg-funnel-whatsapp',
+    icon: MessageCircle,
+    title: 'Confeitaria Andreia',
+    message: 'Destravar vendas de açaí agora...',
+    time: 'Agora',
+    isClickable: true,
+  },
   {
     id: 'nubank1',
     app: 'Nubank',
@@ -33,77 +43,11 @@ const notifications = [
     time: '8 min',
     isClickable: false,
   },
-  {
-    id: 'nubank4',
-    app: 'Nubank',
-    color: 'bg-funnel-nubank',
-    title: 'Transferência recebida',
-    message: 'R$ 34,50 de Carlos Mendes',
-    time: '11 min',
-    isClickable: false,
-  },
-  {
-    id: 'nubank5',
-    app: 'Nubank',
-    color: 'bg-funnel-nubank',
-    title: 'Transferência recebida',
-    message: 'R$ 31,80 de Fernanda Costa',
-    time: '14 min',
-    isClickable: false,
-  },
-  {
-    id: 'nubank6',
-    app: 'Nubank',
-    color: 'bg-funnel-nubank',
-    title: 'Transferência recebida',
-    message: 'R$ 33,20 de Roberto Lima',
-    time: '17 min',
-    isClickable: false,
-  },
-  {
-    id: 'whatsapp',
-    app: 'WhatsApp',
-    color: 'bg-funnel-whatsapp',
-    icon: MessageCircle,
-    title: 'Confeitaria Andreia',
-    message: 'Destravar vendas de açaí agora...',
-    time: 'Agora',
-    isClickable: true,
-  },
 ];
 
 const Step3: React.FC = () => {
   const navigate = useNavigate();
   const { addPoints, completeStep } = useFunnel();
-  
-  // Estado para controlar quantas notificações estão visíveis
-  const [visibleCount, setVisibleCount] = useState(0);
-  
-  // URL do som de notificação (som realista de notificação)
-  const notificationSound = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
-
-  useEffect(() => {
-    const timeouts: NodeJS.Timeout[] = [];
-
-    // Criar timeouts para cada notificação aparecer sequencialmente
-    notifications.forEach((_, index) => {
-      const timeout = setTimeout(() => {
-        setVisibleCount(prev => prev + 1);
-        
-        // Tocar som de notificação
-        const audio = new Audio(notificationSound);
-        audio.volume = 0.5; // Volume a 50%
-        audio.play().catch(err => console.error('Erro ao tocar som:', err));
-      }, index * 800); // 0.8 segundos entre cada notificação (mais rápido)
-      
-      timeouts.push(timeout);
-    });
-
-    // Cleanup: limpar todos os timeouts quando o componente desmontar
-    return () => {
-      timeouts.forEach(timeout => clearTimeout(timeout));
-    };
-  }, []);
 
   const handleWhatsAppClick = () => {
     addPoints(50);
@@ -124,7 +68,7 @@ const Step3: React.FC = () => {
         </div>
         
         <div className="flex-1 flex flex-col gap-3 max-w-md mx-auto w-full">
-          {notifications.slice(0, visibleCount).map((notif, index) => (
+          {notifications.map((notif, index) => (
             <div
               key={notif.id}
               onClick={notif.isClickable ? handleWhatsAppClick : undefined}
@@ -133,7 +77,7 @@ const Step3: React.FC = () => {
                 animate-fade-in
                 ${notif.isClickable ? 'cursor-pointer hover:bg-funnel-card/80 transition-colors ring-2 ring-funnel-success/50' : 'opacity-90'}
               `}
-              style={{ animationDelay: '0ms' }}
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${notif.color}`}>
