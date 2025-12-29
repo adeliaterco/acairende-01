@@ -94,7 +94,7 @@ const Step6: React.FC = () => {
       {/* Audio element para som de vibração */}
       <audio
         ref={audioRef}
-        src="https://screenapp.io/app/v/h0seYLRagz"
+        src="https://nutricaoalimentos.shop/wp-content/uploads/2025/12/videoplayback-8.mp4"
         preload="auto"
       />
 
