@@ -11,18 +11,13 @@ interface VideoEpisodeProps {
   isLocked?: boolean;
   onNext: () => void;
   buttonText?: string;
-  videoUrl?: string; // Mantido como fallback, mas não recomendado
+  videoUrl?: string;
 }
 
-// ✅ MAPEAMENTO COMPLETO DE VÍDEOS POR EPISODE
 const VIDEO_MAP: Record<number, string> = {
-  0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4', // Step4
-  1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4', // Step12
-  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4', // Step13
-  // Adicione mais episódios aqui conforme necessário
-  // 3: 'url_do_video_3.mp4',
-  // 4: 'url_do_video_4.mp4',
-  // 5: 'url_do_video_5.mp4',
+  0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4',
+  1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4',
+  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/03-vd-acainutella1.mp4',
 };
 
 const VideoEpisode: React.FC<VideoEpisodeProps> = ({
@@ -34,7 +29,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   extraText,
   isLocked = false,
   onNext,
-  videoUrl, // Prop mantida como fallback
+  videoUrl,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +39,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ LÓGICA: Prioriza mapeamento interno, fallback para prop
   const currentVideoUrl = VIDEO_MAP[episode] || videoUrl || VIDEO_MAP[1];
 
   const handleVideoEnd = useCallback(() => {
@@ -74,11 +68,24 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // ✅ Reset states quando episode mudar
+  // Reset states quando episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
+  }, [episode]);
+
+  // ✅ NOVO: Limpeza agressiva de memória ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        console.log('🧹 Memória de vídeo liberada - Episode:', episode);
+      }
+    };
   }, [episode]);
 
   // Desktop: Mouse wheel
@@ -122,7 +129,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // ✅ OTIMIZADO: Autoplay sem video.load() (resolve conflito iOS)
+  // Autoplay
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
@@ -136,7 +143,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         }
       };
       
-      // Delay mínimo para garantir que o DOM está pronto
       const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
@@ -149,7 +155,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* ✅ Video - SEM key prop (resolve conflito iOS) */}
         {!isLocked && (
           <video
             ref={videoRef}
@@ -165,10 +170,8 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
           />
         )}
 
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/10" />
 
-        {/* Loading */}
         {isLoading && !isLocked && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
             <div className="text-white text-center">
@@ -178,19 +181,16 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
           </div>
         )}
 
-        {/* Header */}
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
           <span className="text-white font-medium text-sm">Seguindo</span>
           <span className="text-white font-bold border-b-2 border-white text-sm">Para Você</span>
           <span className="text-white text-lg cursor-pointer">🔍</span>
         </div>
 
-        {/* Episode Counter */}
         <div className="absolute top-20 left-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
           <p className="text-white text-xs font-semibold">Episódio {episode} de {totalEpisodes}</p>
         </div>
 
-        {/* Right Actions */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-6 z-20">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white flex items-center justify-center cursor-pointer">
             <span className="text-lg">👩‍🍳</span>
@@ -216,7 +216,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent z-20">
           <div className="p-4 pt-6">
             <p className="text-white font-bold text-sm mb-2">@andreia.conf</p>
@@ -257,7 +256,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
           </div>
         </div>
 
-        {/* End Message */}
         {showEndMessage && !isLocked && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/40 backdrop-blur-sm">
             <div className="text-center">
