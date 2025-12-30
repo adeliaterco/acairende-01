@@ -19,7 +19,6 @@ const Step12: React.FC = () => {
       title="Açaí c/ Leitinho"
       likes="1.6K"
       comments="853"
-      videoUrl="/videos/acai-leitinho.mp4"
       onNext={handleNext}
       buttonText="Próximo episódio"
     />
