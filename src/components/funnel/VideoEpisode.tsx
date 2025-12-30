@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Lock, Music, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Music, Bookmark } from 'lucide-react';
 
 interface VideoEpisodeProps {
   episode: number;
@@ -31,15 +31,17 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(parseInt(likes));
   const [showEndMessage, setShowEndMessage] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
   // Detectar fim do vídeo
   const handleVideoEnd = () => {
+    setVideoEnded(true);
     setShowEndMessage(true);
   };
 
-  // Detectar swipe para cima
+  // Detectar swipe para cima - MAS SÓ FUNCIONA SE VÍDEO TERMINOU
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientY);
   };
@@ -50,8 +52,8 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   };
 
   const handleSwipe = () => {
-    if (touchStart - touchEnd > 50) {
-      // Swipe para cima detectado (diferença maior que 50px)
+    // SÓ FUNCIONA SE O VÍDEO TERMINOU
+    if (videoEnded && touchStart - touchEnd > 50) {
       onNext();
     }
   };
@@ -75,18 +77,14 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     return num.toString();
   };
 
-  const handleButtonClick = () => {
-    onNext();
-  };
-
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="min-h-screen bg-funnel-bg flex items-center justify-center p-4"
+      className="min-h-screen bg-black flex items-center justify-center p-4 overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-2xl relative overflow-hidden border border-funnel-border shadow-2xl">
+      <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
         {/* Video Background */}
         {!isLocked && (
@@ -104,26 +102,20 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         {/* Dark overlay para melhor legibilidade */}
         <div className="absolute inset-0 bg-black/10" />
 
-        {/* Episode badge */}
-        <div className="absolute top-4 left-4 bg-funnel-primary/90 px-3 py-1 rounded-full z-10">
-          <span className="text-white font-bold text-sm">EP.{episode}/{totalEpisodes}</span>
+        {/* TikTok Header */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
+          <span className="text-white font-medium text-sm">Seguindo</span>
+          <span className="text-white font-bold border-b-2 border-white text-sm">Para Você</span>
+          <span className="text-white text-lg cursor-pointer hover:scale-110 transition-transform">🔍</span>
         </div>
 
-        {/* Video placeholder - Aparece se estiver locked ou se não houver vídeo */}
-        {isLocked && (
-          <div className="absolute inset-0 flex items-center justify-center z-5">
-            <div className="text-center">
-              <Lock className="w-20 h-20 text-funnel-warning mx-auto mb-4" />
-              <h3 className="text-funnel-text text-xl font-bold">{title}</h3>
-              {extraText && (
-                <p className="text-funnel-success text-lg font-semibold mt-2">{extraText}</p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Episode Counter */}
+        <div className="absolute top-20 left-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
+          <p className="text-white text-xs font-semibold">Episódio {episode} de {totalEpisodes}</p>
+        </div>
 
         {/* Right side actions - Vertical */}
-        <div className="absolute right-4 bottom-40 flex flex-col gap-6 z-20">
+        <div className="absolute right-4 bottom-32 flex flex-col gap-6 z-20">
           {/* Profile Avatar */}
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white overflow-hidden flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
             <span className="text-lg">👩‍🍳</span>
@@ -199,21 +191,11 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Button Section */}
-          <div className="px-4 pb-4">
-            <button
-              onClick={handleButtonClick}
-              className="w-full bg-funnel-success hover:bg-funnel-success/90 text-black font-bold py-4 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {buttonText}
-            </button>
-          </div>
         </div>
 
-        {/* End Message - Aparece quando vídeo termina */}
+        {/* End Message - Aparece APENAS quando vídeo termina */}
         {showEndMessage && !isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/40 backdrop-blur-sm animate-fade-in">
             <div className="text-center">
               <p className="text-white text-2xl font-bold mb-4">✨</p>
               <p className="text-white text-xl font-bold mb-6">Vídeo finalizado!</p>
