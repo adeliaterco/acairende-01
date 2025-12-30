@@ -19,7 +19,7 @@ const Step13: React.FC = () => {
       title="Açaí + Nutella"
       likes="1.4K"
       comments="923"
-      videoUrl="https://nutricaoalimentos.shop/wp-content/uploads/2025/12/02-vd-acainutella.mp4"
+      videoUrl="https://nutricaoalimentos.shop/wp-content/uploads/2025/12/02-vd-acainutella.mov"
       onNext={handleNext}
       buttonText="Próximo episódio"
     />
