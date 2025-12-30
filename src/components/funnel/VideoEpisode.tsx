@@ -32,7 +32,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [key, setKey] = useState(0); // ← NOVO: Force re-render
+  const [key, setKey] = useState(0);
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
@@ -61,12 +61,12 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // ← NOVO: Reset quando videoUrl ou episode mudar
+  // Reset quando videoUrl ou episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
-    setKey(prev => prev + 1); // Force re-render do vídeo
+    setKey(prev => prev + 1);
   }, [videoUrl, episode]);
 
   // Desktop: Mouse wheel
@@ -110,27 +110,35 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Autoplay
+  // Autoplay - iOS OPTIMIZED
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
       
-      // ← NOVO: Force reload
+      // iOS Safari precisa de load() antes de play()
       video.load();
       
       const playVideo = async () => {
         try {
+          // iOS Safari: precisa estar muted para autoplay
+          video.muted = true;
           await video.play();
-          console.log('✅ Vídeo reproduzindo');
+          console.log('✅ Vídeo reproduzindo (muted para iOS)');
+          
+          // Tenta desmutar após 100ms (iOS permite depois do play)
+          setTimeout(() => {
+            video.muted = false;
+          }, 100);
         } catch (error) {
           console.log('⚠️ Autoplay bloqueado:', error);
         }
       };
       
-      const timer = setTimeout(playVideo, 100);
+      // iOS precisa de mais tempo
+      const timer = setTimeout(playVideo, 200);
       return () => clearTimeout(timer);
     }
-  }, [isLocked, key]); // ← Depende do key
+  }, [isLocked, key]);
 
   return (
     <div
@@ -139,7 +147,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* Video - ← NOVO: key força re-render */}
+        {/* Video - iOS OPTIMIZED */}
         {!isLocked && (
           <video
             key={key}
@@ -148,11 +156,11 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
-            autoPlay
             playsInline
-            muted={false}
             loop={false}
-            preload="auto"
+            preload="metadata"
+            webkit-playsinline="true"
+            x-webkit-airplay="allow"
           />
         )}
 
@@ -233,7 +241,14 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="text-white">
+              <button 
+                className="text-white"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = !videoRef.current.muted;
+                  }
+                }}
+              >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
