@@ -32,7 +32,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [key, setKey] = useState(0); // ← NOVO: Force re-render
+  const [key, setKey] = useState(0);
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
@@ -61,13 +61,13 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // ← NOVO: Reset quando videoUrl ou episode mudar
+  // ← CORRIGIDO: Apenas episode como trigger
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
-    setKey(prev => prev + 1); // Force re-render do vídeo
-  }, [videoUrl, episode]);
+    setKey(prev => prev + 1);
+  }, [episode]); // ← REMOVIDO videoUrl daqui
 
   // Desktop: Mouse wheel
   useEffect(() => {
@@ -114,8 +114,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
-      
-      // ← NOVO: Force reload
       video.load();
       
       const playVideo = async () => {
@@ -130,7 +128,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
       const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
-  }, [isLocked, key]); // ← Depende do key
+  }, [isLocked, key]);
 
   return (
     <div
@@ -139,7 +137,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* Video - ← NOVO: key força re-render */}
+        {/* Video */}
         {!isLocked && (
           <video
             key={key}
