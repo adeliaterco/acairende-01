@@ -20,17 +20,22 @@ const VIDEO_MAP: Record<number, string> = {
   2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/03-vd-acainutella1.mp4',
 };
 
-// CORREÇÃO: Função para limpar completamente um vídeo (crítico para Safari iOS)
+// Função para limpar completamente um elemento de vídeo (crítico para Safari iOS)
 const cleanupVideo = (video: HTMLVideoElement | null) => {
   if (!video) return;
+  
   try {
     video.pause();
     video.removeAttribute('src');
     video.load();
+    
+    // Remove event listeners
     video.onended = null;
     video.oncanplay = null;
     video.onerror = null;
     video.onloadeddata = null;
+    
+    // Força garbage collection
     video.src = '';
   } catch (e) {
     console.log('Cleanup error:', e);
@@ -58,11 +63,11 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
 
   const currentVideoUrl = VIDEO_MAP[episode] ?? videoUrl ?? VIDEO_MAP[1];
 
-  // CORREÇÃO 1: Limpeza agressiva ao montar/desmontar
+  // Limpeza agressiva ao montar/desmontar - CRÍTICO para Safari iOS
   useEffect(() => {
     const video = videoRef.current;
     
-    // Limpa TODOS os vídeos anteriores na página (libera memória)
+    // Cleanup de vídeos anteriores na página (força liberação de memória)
     const allVideos = document.querySelectorAll('video');
     allVideos.forEach((v) => {
       if (v !== video) {
@@ -75,7 +80,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     };
   }, []);
 
-  // CORREÇÃO 2: Reset estado quando episode muda
+  // Reset estado quando episode muda
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
@@ -83,7 +88,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     setVideoReady(false);
   }, [episode]);
 
-  // CORREÇÃO 3: Carregamento progressivo para Safari iOS
+  // Carregamento progressivo do vídeo para Safari iOS
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isLocked) return;
@@ -107,7 +112,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('error', handleError);
 
-    // CORREÇÃO 4: Delay no src para evitar race conditions no Safari
+    // Carrega o vídeo com delay para Safari iOS
     const loadTimer = setTimeout(() => {
       if (video) {
         video.src = currentVideoUrl;
@@ -123,7 +128,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     };
   }, [currentVideoUrl, episode, isLocked]);
 
-  // CORREÇÃO 5: Autoplay quando vídeo estiver pronto
+  // Autoplay quando vídeo estiver pronto
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoReady || isLocked) return;
@@ -134,6 +139,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         console.log(`▶️ Video playing - Episode: ${episode}`);
       } catch (error) {
         console.log('⚠️ Autoplay blocked, waiting for user interaction');
+        // Safari iOS pode bloquear autoplay - adiciona listener de toque
         const handleTouch = async () => {
           try {
             await video.play();
@@ -167,30 +173,19 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     return num.toString();
   }, []);
 
-  // CORREÇÃO 6: Limpa vídeo antes de navegar
   const handleNavigation = useCallback(() => {
     if (videoEnded && !isLocked) {
+      // Limpa vídeo antes de navegar
       cleanupVideo(videoRef.current);
+      
+      // Pequeno delay para garantir limpeza
       setTimeout(() => {
         onNext();
       }, 50);
     }
   }, [videoEnded, isLocked, onNext]);
 
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY > 30) {
-        handleNavigation();
-      }
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: true });
-      return () => container.removeEventListener('wheel', handleWheel);
-    }
-  }, [handleNavigation]);
-
+  // Swipe handling
   useEffect(() => {
     let touchStartY = 0;
 
@@ -216,14 +211,28 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
+  // Wheel handling para desktop
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 30) {
+        handleNavigation();
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: true });
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleNavigation]);
+
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-black flex items-center justify-center p-4 overflow-hidden"
+      className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden"
     >
-      <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
+      <div className="w-full max-w-[400px] aspect-[9/16] bg-background rounded-3xl relative overflow-hidden border-2 border-border shadow-2xl">
         
-        {/* CORREÇÃO 7: Atributos específicos para Safari iOS */}
         {!isLocked && (
           <video
             ref={videoRef}
@@ -238,86 +247,116 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
           />
         )}
 
-        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-0 bg-background/10 pointer-events-none" />
 
         {isLoading && !isLocked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
-              <p>Carregando...</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-40">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-foreground text-sm font-medium">Carregando...</p>
             </div>
           </div>
         )}
 
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
-          <span className="text-white font-medium text-sm">Seguindo</span>
-          <span className="text-white font-bold border-b-2 border-white text-sm">Para Você</span>
-          <span className="text-white text-lg cursor-pointer">🔍</span>
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-background/60 to-transparent">
+          <span className="text-foreground/80 font-medium text-sm">Seguindo</span>
+          <span className="text-foreground font-bold border-b-2 border-primary text-sm">Para Você</span>
+          <span className="text-foreground text-lg cursor-pointer">🔍</span>
         </div>
 
-        <div className="absolute top-20 left-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
-          <p className="text-white text-xs font-semibold">Episódio {episode + 1} de {totalEpisodes}</p>
+        {/* Episode Badge */}
+        <div className="absolute top-20 left-4 z-10 bg-background/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border">
+          <p className="text-foreground text-xs font-semibold">
+            Episódio {episode + 1} de {totalEpisodes}
+          </p>
         </div>
 
-        <div className="absolute right-4 bottom-32 flex flex-col gap-6 z-20">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white flex items-center justify-center cursor-pointer">
+        {/* Right Actions */}
+        <div className="absolute right-4 bottom-36 flex flex-col gap-5 z-20">
+          <div className="w-12 h-12 rounded-full gradient-primary border-2 border-foreground flex items-center justify-center cursor-pointer shadow-glow">
             <span className="text-lg">👩‍🍳</span>
           </div>
 
-          <div className="flex flex-col items-center cursor-pointer" onClick={handleLike}>
-            <Heart className={`w-8 h-8 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            <span className="text-white text-xs mt-1 font-semibold">{formatNumber(likeCount)}</span>
+          <div 
+            className="flex flex-col items-center cursor-pointer group" 
+            onClick={handleLike}
+          >
+            <Heart 
+              className={`w-8 h-8 transition-all duration-200 ${
+                isLiked 
+                  ? 'fill-primary text-primary animate-heart-pop' 
+                  : 'text-foreground group-hover:text-primary'
+              }`} 
+            />
+            <span className="text-foreground text-xs mt-1 font-semibold">
+              {formatNumber(likeCount)}
+            </span>
           </div>
 
-          <div className="flex flex-col items-center cursor-pointer">
-            <MessageCircle className="w-8 h-8 text-white" />
-            <span className="text-white text-xs mt-1 font-semibold">{comments}</span>
+          <div className="flex flex-col items-center cursor-pointer group">
+            <MessageCircle className="w-8 h-8 text-foreground group-hover:text-primary transition-colors" />
+            <span className="text-foreground text-xs mt-1 font-semibold">{comments}</span>
           </div>
 
-          <div className="flex flex-col items-center cursor-pointer">
-            <Share2 className="w-8 h-8 text-white" />
-            <span className="text-white text-xs mt-1 font-semibold">Compartilhar</span>
+          <div className="flex flex-col items-center cursor-pointer group">
+            <Share2 className="w-8 h-8 text-foreground group-hover:text-primary transition-colors" />
+            <span className="text-foreground text-xs mt-1 font-semibold">Enviar</span>
           </div>
 
-          <div className="flex flex-col items-center cursor-pointer">
-            <Bookmark className="w-8 h-8 text-white" />
+          <div className="flex flex-col items-center cursor-pointer group">
+            <Bookmark className="w-8 h-8 text-foreground group-hover:text-primary transition-colors" />
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent z-20">
-          <div className="p-4 pt-6">
-            <p className="text-white font-bold text-sm mb-2">@andreia.conf</p>
-            <p className="text-white text-xs mb-4 leading-relaxed line-clamp-2">
+        {/* Bottom Info */}
+        <div className="absolute bottom-0 left-0 right-0 gradient-overlay z-20">
+          <div className="p-4 pt-8">
+            <p className="text-foreground font-bold text-sm mb-2">@andreia.conf</p>
+            <p className="text-foreground/90 text-xs mb-4 leading-relaxed line-clamp-2">
               {title} 🍇💰 #empreendedorismo #acai
             </p>
 
-            <div className="flex items-center gap-2 mb-4 cursor-pointer">
-              <Music className="w-3 h-3 text-white flex-shrink-0" />
-              <p className="text-white text-xs truncate">Som original - @andreia.conf</p>
+            <div className="flex items-center gap-2 mb-4 cursor-pointer group">
+              <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
+                <Music className="w-3 h-3 text-foreground" />
+              </div>
+              <p className="text-foreground/80 text-xs truncate group-hover:text-foreground transition-colors">
+                Som original - @andreia.conf
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-4 pb-4 border-t border-white/10">
-            <div className="flex-1 flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 mr-2">
+          {/* Comment Input */}
+          <div className="flex items-center justify-between px-4 pb-4 border-t border-border/30">
+            <div className="flex-1 flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2.5 mr-3">
               <input
                 type="text"
                 placeholder="Comentar..."
-                className="flex-1 bg-transparent text-white text-xs placeholder-white/50 outline-none"
+                className="flex-1 bg-transparent text-foreground text-xs placeholder-muted-foreground outline-none"
                 disabled
               />
-              <span className="text-white/50 text-xs">😊</span>
+              <span className="text-muted-foreground text-sm">😊</span>
             </div>
           </div>
         </div>
 
+        {/* End Message Overlay */}
         {showEndMessage && !isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/40 backdrop-blur-sm">
-            <div className="text-center">
-              <p className="text-white text-2xl font-bold mb-4">✨</p>
-              <p className="text-white text-xl font-bold mb-6">Vídeo finalizado!</p>
-              <p className="text-white text-lg font-semibold animate-bounce">
-                ⬆️ Arrasta pra cima para continuar
-              </p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-background/60 backdrop-blur-sm">
+            <div className="text-center animate-slide-up">
+              <div className="text-5xl mb-4">✨</div>
+              <p className="text-foreground text-xl font-bold mb-6">Vídeo finalizado!</p>
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-bounce-soft">
+                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </div>
+                <p className="text-foreground text-lg font-semibold">
+                  Arrasta pra cima
+                </p>
+              </div>
             </div>
           </div>
         )}
