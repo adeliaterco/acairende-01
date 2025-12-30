@@ -43,7 +43,7 @@ const Step4: React.FC = () => {
         {/* Video Background */}
         <video
           ref={videoRef}
-          src="https://nutricaoalimentos.shop/ssstik-io_1767035842478/"
+          src="https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mov"
           className="absolute inset-0 w-full h-full object-cover"
           onEnded={handleVideoEnd}
           autoPlay
