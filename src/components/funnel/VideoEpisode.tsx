@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Share2, Music, Bookmark, Play } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Music, Bookmark } from 'lucide-react';
 
 interface VideoEpisodeProps {
   episode: number;
@@ -38,40 +38,16 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const currentVideoUrl = VIDEO_MAP[episode] || videoUrl || VIDEO_MAP[1];
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
     setShowEndMessage(true);
-    setIsPlaying(false);
   }, []);
 
   const handleCanPlay = useCallback(() => {
     setIsLoading(false);
-  }, []);
-
-  const handlePlay = useCallback(() => {
-    setIsPlaying(true);
-    setShowPlayButton(false);
-  }, []);
-
-  const handlePause = useCallback(() => {
-    setIsPlaying(false);
-  }, []);
-
-  const handleManualPlay = useCallback(async () => {
-    if (videoRef.current) {
-      try {
-        await videoRef.current.play();
-        setShowPlayButton(false);
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Erro ao reproduzir vídeo:', error);
-      }
-    }
   }, []);
 
   const handleLike = useCallback(() => {
@@ -102,8 +78,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
-    setShowPlayButton(false);
-    setIsPlaying(false);
   }, [episode]);
 
   useEffect(() => {
@@ -163,14 +137,12 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
       const playVideo = async () => {
         try {
           await video.play();
-          setIsPlaying(true);
         } catch (error) {
-          console.log('⚠️ Autoplay bloqueado - mostrando botão de play');
-          setShowPlayButton(true);
+          console.log('⚠️ Autoplay bloqueado:', error);
         }
       };
       
-      const timer = setTimeout(playVideo, 300);
+      const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
   }, [isLocked, episode]);
@@ -190,8 +162,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
-            onPlay={handlePlay}
-            onPause={handlePause}
+            autoPlay
             playsInline
             muted={false}
             loop={false}
@@ -206,17 +177,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             <div className="text-white text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
               <p>Carregando...</p>
-            </div>
-          </div>
-        )}
-
-        {showPlayButton && !isPlaying && !isLoading && (
-          <div 
-            className="absolute inset-0 flex items-center justify-center z-50 cursor-pointer"
-            onClick={handleManualPlay}
-          >
-            <div className="bg-white/20 backdrop-blur-sm rounded-full p-6 hover:bg-white/30 transition-all">
-              <Play className="w-16 h-16 text-white fill-white" />
             </div>
           </div>
         )}
