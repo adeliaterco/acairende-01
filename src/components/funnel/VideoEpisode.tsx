@@ -64,18 +64,22 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
 
   const handleNavigation = useCallback(() => {
     if (videoEnded && !isLocked) {
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.pause();
+        video.src = '';
+        video.load();
+      }
       onNext();
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // Reset states quando episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
   }, [episode]);
 
-  // ✅ NOVO: Limpeza agressiva de memória ao desmontar componente
   useEffect(() => {
     return () => {
       if (videoRef.current) {
@@ -83,12 +87,10 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         video.pause();
         video.removeAttribute('src');
         video.load();
-        console.log('🧹 Memória de vídeo liberada - Episode:', episode);
       }
     };
-  }, [episode]);
+  }, []);
 
-  // Desktop: Mouse wheel
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (e.deltaY > 30) {
@@ -103,7 +105,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Mobile: Touch swipe
   useEffect(() => {
     let touchStartY = 0;
 
@@ -129,7 +130,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Autoplay
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
@@ -137,7 +137,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
       const playVideo = async () => {
         try {
           await video.play();
-          console.log('✅ Vídeo reproduzindo - Episode:', episode);
         } catch (error) {
           console.log('⚠️ Autoplay bloqueado:', error);
         }
@@ -166,7 +165,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             playsInline
             muted={false}
             loop={false}
-            preload="auto"
+            preload="metadata"
           />
         )}
 
