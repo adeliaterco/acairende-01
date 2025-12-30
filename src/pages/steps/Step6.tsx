@@ -128,7 +128,7 @@ const Step6: React.FC = () => {
 
         {/* Caller Info */}
         <div className="text-center mb-12">
-          <h2 className="text-white text-3xl font-bold mb-2">@andreia.conf</h2>
+          <h2 className="text-white text-3xl font-bold mb-2">@sophia.conf</h2>
           <p className={`text-white/70 text-lg font-medium ${!isAnswered ? 'animate-pulse' : ''}`}>
             {isAnswered ? 'Chamada conectada...' : 'Chamada de áudio...'}
           </p>
