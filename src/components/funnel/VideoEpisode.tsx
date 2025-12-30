@@ -11,18 +11,19 @@ interface VideoEpisodeProps {
   isLocked?: boolean;
   onNext: () => void;
   buttonText?: string;
-  videoUrl?: string; // Mantido como fallback, mas não recomendado
+  videoUrl?: string;
 }
 
-// ✅ MAPEAMENTO COMPLETO DE VÍDEOS POR EPISODE
+// ✅ MAPEAMENTO COMPLETO DE VÍDEOS
 const VIDEO_MAP: Record<number, string> = {
-  0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4', // Step4
-  1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4', // Step12
-  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/03-vd-acainutella1.mp4', // Step13
-  // Adicione mais episódios aqui conforme necessário
-  // 3: 'url_do_video_3.mp4',
-  // 4: 'url_do_video_4.mp4',
-  // 5: 'url_do_video_5.mp4',
+  0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4',
+  1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4',
+  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/02-vd-acainutella.mp4',
+};
+
+// ✅ ESTRATÉGIA 1: Detecção de iOS
+const isIOSDevice = (): boolean => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
 
 const VideoEpisode: React.FC<VideoEpisodeProps> = ({
@@ -34,7 +35,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   extraText,
   isLocked = false,
   onNext,
-  videoUrl, // Prop mantida como fallback
+  videoUrl,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,8 +44,9 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const [isIOS] = useState(isIOSDevice());
 
-  // ✅ LÓGICA: Prioriza mapeamento interno, fallback para prop
   const currentVideoUrl = VIDEO_MAP[episode] || videoUrl || VIDEO_MAP[1];
 
   const handleVideoEnd = useCallback(() => {
@@ -74,11 +76,33 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // ✅ Reset states quando episode mudar
+  // ✅ ESTRATÉGIA 2: User Interaction Trigger (iOS)
+  const handleTapToPlay = useCallback(() => {
+    setUserInteracted(true);
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => console.error('Erro ao reproduzir:', err));
+    }
+  }, []);
+
+  // Reset states quando episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
+    setUserInteracted(false);
+  }, [episode]);
+
+  // ✅ ESTRATÉGIA 3: Limpeza de memória ao desmontar
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.pause();
+        video.src = '';
+        video.load();
+        console.log('🧹 Memória de vídeo liberada');
+      }
+    };
   }, [episode]);
 
   // Desktop: Mouse wheel
@@ -122,10 +146,15 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // ✅ OTIMIZADO: Autoplay sem video.load() (resolve conflito iOS)
+  // ✅ Autoplay adaptativo (iOS vs outros dispositivos)
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
+      
+      if (isIOS && !userInteracted) {
+        console.log('📱 iOS detectado - aguardando interação do usuário');
+        return;
+      }
       
       const playVideo = async () => {
         try {
@@ -136,11 +165,10 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         }
       };
       
-      // Delay mínimo para garantir que o DOM está pronto
       const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
-  }, [isLocked, episode]);
+  }, [isLocked, episode, isIOS, userInteracted]);
 
   return (
     <div
@@ -149,7 +177,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* ✅ Video - SEM key prop (resolve conflito iOS) */}
+        {/* Video */}
         {!isLocked && (
           <video
             ref={videoRef}
@@ -157,16 +185,30 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
-            autoPlay
             playsInline
             muted={false}
             loop={false}
-            preload="auto"
+            preload={isIOS ? "metadata" : "auto"}
           />
         )}
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/10" />
+
+        {/* ✅ NOVO: Tap to Play Overlay (apenas iOS, antes da interação) */}
+        {isIOS && !userInteracted && !isLocked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50">
+            <button
+              onClick={handleTapToPlay}
+              className="bg-white text-black px-8 py-4 rounded-full font-bold text-lg shadow-2xl hover:scale-110 transition-transform flex items-center gap-3"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Toque para reproduzir
+            </button>
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && !isLocked && (
