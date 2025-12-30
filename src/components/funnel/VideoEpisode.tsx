@@ -18,7 +18,7 @@ interface VideoEpisodeProps {
 const VIDEO_MAP: Record<number, string> = {
   0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4', // Step4
   1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4', // Step12
-  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/02-vd-acainutella.mp4', // Step13
+  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/03-vd-acainutella1.mp4', // Step13
   // Adicione mais episódios aqui conforme necessário
   // 3: 'url_do_video_3.mp4',
   // 4: 'url_do_video_4.mp4',
