@@ -19,6 +19,7 @@ const Step13: React.FC = () => {
       title="Açaí + Nutella"
       likes="1.4K"
       comments="923"
+      videoUrl="/videos/acai-nutella.mp4"
       onNext={handleNext}
       buttonText="Próximo episódio"
     />
