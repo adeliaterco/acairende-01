@@ -23,180 +23,199 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   extraText,
   isLocked = false,
   onNext,
-  buttonText = 'Próximo episódio',
   videoUrl = 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4',
 }) => {
-  /* refs e estados */
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState<number>(parseInt(likes, 10));
+  const [likeCount, setLikeCount] = useState(parseInt(likes));
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [key, setKey] = useState(0);           // força remount
+  const [key, setKey] = useState(0);
 
-  /* ===== util ===== */
-  const kFormatter = (n: number) =>
-    n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K` : `${n}`;
-
-  /* ===== handlers ===== */
-  const handleLike = () => {
-    setIsLiked(p => !p);
-    setLikeCount(p => (isLiked ? p - 1 : p + 1));
-  };
-
-  const handleCanPlay = () => setIsLoading(false);
-  const handleVideoEnd = () => {
+  const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
     setShowEndMessage(true);
-  };
+  }, []);
 
-  const goNext = () => {
-    if (videoEnded && !isLocked) onNext();
-  };
+  const handleCanPlay = useCallback(() => {
+    setIsLoading(false);
+  }, []);
 
-  /* ===== swipe up / wheel ===== */
-  useEffect(() => {
-    /* desktop */
-    const wheel = (e: WheelEvent) => e.deltaY > 30 && goNext();
-    /* mobile */
-    let touchY = 0;
-    const tStart = (e: TouchEvent) => (touchY = e.touches[0].clientY);
-    const tEnd = (e: TouchEvent) =>
-      touchY - e.changedTouches[0].clientY > 50 && goNext();
+  const handleLike = useCallback(() => {
+    setIsLiked(prev => !prev);
+    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+  }, [isLiked]);
 
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener('wheel', wheel, { passive: true });
-    el.addEventListener('touchstart', tStart, { passive: true });
-    el.addEventListener('touchend', tEnd, { passive: true });
-    return () => {
-      el.removeEventListener('wheel', wheel);
-      el.removeEventListener('touchstart', tStart);
-      el.removeEventListener('touchend', tEnd);
-    };
-  }, [goNext]);
+  const formatNumber = useCallback((num: number) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return num.toString();
+  }, []);
 
-  /* ===== reset a cada episódio ===== */
+  const handleNavigation = useCallback(() => {
+    if (videoEnded && !isLocked) {
+      onNext();
+    }
+  }, [videoEnded, isLocked, onNext]);
+
+  // Reset quando videoUrl ou episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
-    setKey(k => k + 1);
-  }, [episode, videoUrl]);
+    setKey(prev => prev + 1);
+  }, [videoUrl, episode]);
 
-  /* ===== autoplay iOS seguro ===== */
+  // Desktop: Mouse wheel
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v || isLocked) return;
-
-    const tryPlay = async () => {
-      try {
-        v.load();          // assegura novo buffer
-        v.muted = true;
-        await v.play();
-        setTimeout(() => (v.muted = false), 150);
-      } catch {
-        /* fallback após 1 s */
-        setTimeout(async () => {
-          try {
-            v.muted = true;
-            await v.play();
-            setTimeout(() => (v.muted = false), 150);
-          } catch (err) {
-            console.warn('Autoplay bloqueado:', err);
-          }
-        }, 1000);
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 30) {
+        handleNavigation();
       }
     };
-    tryPlay();
-  }, [key, isLocked]);
 
-  /* ===== libera buffer ao desmontar ===== */
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: true });
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleNavigation]);
+
+  // Mobile: Touch swipe
   useEffect(() => {
-    return () => {
-      const v = videoRef.current;
-      if (v) {
-        v.pause();
-        v.src = '';
-        v.load();
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      if (touchStartY - touchEndY > 50) {
+        handleNavigation();
       }
     };
-  }, [episode]);
 
-  /* ===== render ===== */
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
+      container.addEventListener('touchend', handleTouchEnd, { passive: true });
+      return () => {
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [handleNavigation]);
+
+  // Autoplay - iOS OPTIMIZED
+  useEffect(() => {
+    if (videoRef.current && !isLocked) {
+      const video = videoRef.current;
+      
+      // iOS Safari precisa de load() antes de play()
+      video.load();
+      
+      const playVideo = async () => {
+        try {
+          // iOS Safari: precisa estar muted para autoplay
+          video.muted = true;
+          await video.play();
+          console.log('✅ Vídeo reproduzindo (muted para iOS)');
+          
+          // Tenta desmutar após 100ms (iOS permite depois do play)
+          setTimeout(() => {
+            video.muted = false;
+          }, 100);
+        } catch (error) {
+          console.log('⚠️ Autoplay bloqueado:', error);
+        }
+      };
+      
+      // iOS precisa de mais tempo
+      const timer = setTimeout(playVideo, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, key]);
+
   return (
     <div
       ref={containerRef}
       className="min-h-screen bg-black flex items-center justify-center p-4 overflow-hidden"
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
-        {/* vídeo */}
+        
+        {/* Video - iOS OPTIMIZED */}
         {!isLocked && (
           <video
-            key={`ep-${key}`}
+            key={key}
             ref={videoRef}
             src={videoUrl}
             className="absolute inset-0 w-full h-full object-cover"
-            playsInline
-            autoPlay
-            muted
-            preload="metadata"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
+            playsInline
+            loop={false}
+            preload="metadata"
+            webkit-playsinline="true"
+            x-webkit-airplay="allow"
           />
         )}
 
-        {/* overlay dark */}
+        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/10" />
 
-        {/* loading spinner */}
+        {/* Loading */}
         {isLoading && !isLocked && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
+              <p>Carregando...</p>
+            </div>
           </div>
         )}
 
-        {/* header estilo TikTok */}
+        {/* Header */}
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
           <span className="text-white font-medium text-sm">Seguindo</span>
           <span className="text-white font-bold border-b-2 border-white text-sm">Para Você</span>
-          <span className="text-white text-lg">🔍</span>
+          <span className="text-white text-lg cursor-pointer">🔍</span>
         </div>
 
-        {/* episódio / contador */}
+        {/* Episode Counter */}
         <div className="absolute top-20 left-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
           <p className="text-white text-xs font-semibold">Episódio {episode} de {totalEpisodes}</p>
         </div>
 
-        {/* ações laterais */}
+        {/* Right Actions */}
         <div className="absolute right-4 bottom-32 flex flex-col gap-6 z-20">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-white flex items-center justify-center cursor-pointer">
             <span className="text-lg">👩‍🍳</span>
           </div>
 
-          <div className="flex flex-col items-center" onClick={handleLike}>
+          <div className="flex flex-col items-center cursor-pointer" onClick={handleLike}>
             <Heart className={`w-8 h-8 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            <span className="text-white text-xs mt-1 font-semibold">{kFormatter(likeCount)}</span>
+            <span className="text-white text-xs mt-1 font-semibold">{formatNumber(likeCount)}</span>
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center cursor-pointer">
             <MessageCircle className="w-8 h-8 text-white" />
             <span className="text-white text-xs mt-1 font-semibold">{comments}</span>
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center cursor-pointer">
             <Share2 className="w-8 h-8 text-white" />
             <span className="text-white text-xs mt-1 font-semibold">Compartilhar</span>
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center cursor-pointer">
             <Bookmark className="w-8 h-8 text-white" />
           </div>
         </div>
 
-        {/* footer estilo TikTok */}
+        {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent z-20">
           <div className="p-4 pt-6">
             <p className="text-white font-bold text-sm mb-2">@andreia.conf</p>
@@ -204,7 +223,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
               {title} 🍇💰 #empreendedorismo #acai
             </p>
 
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-4 cursor-pointer">
               <Music className="w-3 h-3 text-white flex-shrink-0" />
               <p className="text-white text-xs truncate">Som original - @andreia.conf</p>
             </div>
@@ -222,25 +241,38 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <button
+              <button 
                 className="text-white"
                 onClick={() => {
-                  if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
+                  if (videoRef.current) {
+                    videoRef.current.muted = !videoRef.current.muted;
+                  }
                 }}
               >
-                🔈
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
               </button>
-              <button className="text-white">⋯</button>
+
+              <button className="text-white">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* mensagem final + swipe hint */}
+        {/* End Message */}
         {showEndMessage && !isLocked && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/40 backdrop-blur-sm">
-            <p className="text-white text-2xl font-bold mb-2">✨</p>
-            <p className="text-white text-xl font-bold mb-6">Vídeo finalizado!</p>
-            <p className="text-white text-lg font-semibold animate-bounce">⬆️ Arrasta pra cima para continuar</p>
+            <div className="text-center">
+              <p className="text-white text-2xl font-bold mb-4">✨</p>
+              <p className="text-white text-xl font-bold mb-6">Vídeo finalizado!</p>
+              <p className="text-white text-lg font-semibold animate-bounce">
+                ⬆️ Arrasta pra cima para continuar
+              </p>
+            </div>
           </div>
         )}
       </div>
