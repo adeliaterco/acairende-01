@@ -156,6 +156,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         
         {!isLocked && (
           <video
+            key={episode}
             ref={videoRef}
             src={currentVideoUrl}
             className="absolute inset-0 w-full h-full object-cover"

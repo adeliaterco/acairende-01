@@ -9,6 +9,7 @@ interface FunnelState {
 }
 
 interface FunnelContextType extends FunnelState {
+  isHydrated: boolean;
   setCurrentStep: (step: number) => void;
   addPoints: (amount: number) => void;
   setSelectedGoal: (goal: string) => void;
@@ -29,14 +30,26 @@ const initialState: FunnelState = {
 const FunnelContext = createContext<FunnelContextType | undefined>(undefined);
 
 export const FunnelProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<FunnelState>(() => {
-    const saved = localStorage.getItem('funnelState');
-    return saved ? JSON.parse(saved) : initialState;
-  });
+  const [state, setState] = useState<FunnelState>(initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('funnelState', JSON.stringify(state));
-  }, [state]);
+    const saved = localStorage.getItem('funnelState');
+    if (saved) {
+      try {
+        setState(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading funnel state:', error);
+      }
+    }
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('funnelState', JSON.stringify(state));
+    }
+  }, [state, isHydrated]);
 
   const setCurrentStep = (step: number) => {
     setState(prev => ({ ...prev, currentStep: step }));
@@ -77,6 +90,7 @@ export const FunnelProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <FunnelContext.Provider
       value={{
         ...state,
+        isHydrated,
         setCurrentStep,
         addPoints,
         setSelectedGoal,
