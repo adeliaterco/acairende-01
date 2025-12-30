@@ -64,12 +64,6 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
 
   const handleNavigation = useCallback(() => {
     if (videoEnded && !isLocked) {
-      if (videoRef.current) {
-        const video = videoRef.current;
-        video.pause();
-        video.src = '';
-        video.load();
-      }
       onNext();
     }
   }, [videoEnded, isLocked, onNext]);
@@ -80,12 +74,13 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     setShowEndMessage(false);
   }, [episode]);
 
+  // MUDANÇA #1: Cleanup sem dependência [episode]
   useEffect(() => {
     return () => {
       if (videoRef.current) {
         const video = videoRef.current;
         video.pause();
-        video.removeAttribute('src');
+        video.src = '';
         video.load();
       }
     };
@@ -156,7 +151,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         
         {!isLocked && (
           <video
-            key={episode}
+            key={`video-${episode}`}
             ref={videoRef}
             src={currentVideoUrl}
             className="absolute inset-0 w-full h-full object-cover"
