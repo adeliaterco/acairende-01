@@ -32,6 +32,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [key, setKey] = useState(0); // ← NOVO: Force re-render
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
@@ -59,6 +60,14 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
       onNext();
     }
   }, [videoEnded, isLocked, onNext]);
+
+  // ← NOVO: Reset quando videoUrl ou episode mudar
+  useEffect(() => {
+    setIsLoading(true);
+    setVideoEnded(false);
+    setShowEndMessage(false);
+    setKey(prev => prev + 1); // Force re-render do vídeo
+  }, [videoUrl, episode]);
 
   // Desktop: Mouse wheel
   useEffect(() => {
@@ -104,18 +113,24 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   // Autoplay
   useEffect(() => {
     if (videoRef.current && !isLocked) {
+      const video = videoRef.current;
+      
+      // ← NOVO: Force reload
+      video.load();
+      
       const playVideo = async () => {
         try {
-          await videoRef.current?.play();
+          await video.play();
+          console.log('✅ Vídeo reproduzindo');
         } catch (error) {
-          console.log('Autoplay prevented:', error);
+          console.log('⚠️ Autoplay bloqueado:', error);
         }
       };
       
       const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
-  }, [isLocked]);
+  }, [isLocked, key]); // ← Depende do key
 
   return (
     <div
@@ -124,9 +139,10 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* Video */}
+        {/* Video - ← NOVO: key força re-render */}
         {!isLocked && (
           <video
+            key={key}
             ref={videoRef}
             src={videoUrl}
             className="absolute inset-0 w-full h-full object-cover"
@@ -134,6 +150,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             onCanPlay={handleCanPlay}
             autoPlay
             playsInline
+            muted={false}
             loop={false}
             preload="auto"
           />
