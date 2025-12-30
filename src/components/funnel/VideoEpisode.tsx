@@ -32,6 +32,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
@@ -39,8 +40,22 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   }, []);
 
   const handleCanPlay = useCallback(() => {
+    console.log('✅ Vídeo pronto para reproduzir');
     setIsLoading(false);
+    setHasError(false);
   }, []);
+
+  const handleVideoError = useCallback((e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    console.error('❌ ERRO ao carregar vídeo:', e);
+    console.error('❌ URL:', videoUrl);
+    const video = e.currentTarget;
+    if (video.error) {
+      console.error('❌ Código do erro:', video.error.code);
+      console.error('❌ Mensagem:', video.error.message);
+    }
+    setIsLoading(false);
+    setHasError(true);
+  }, [videoUrl]);
 
   const handleLike = useCallback(() => {
     setIsLiked(prev => !prev);
@@ -101,14 +116,42 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Autoplay
+  // Autoplay - CORRIGIDO
   useEffect(() => {
-    if (videoRef.current && !isLocked) {
-      videoRef.current.play().catch(() => {
-        console.log('Autoplay bloqueado pelo navegador');
-      });
+    const video = videoRef.current;
+    if (video && !isLocked) {
+      console.log('🎬 Tentando reproduzir vídeo:', videoUrl);
+      
+      // Aguarda um pouco para garantir que o vídeo carregou
+      const timer = setTimeout(() => {
+        video.play()
+          .then(() => {
+            console.log('✅ Vídeo iniciado com sucesso');
+          })
+          .catch((error) => {
+            console.error('❌ Erro no autoplay:', error);
+            // Tenta novamente com muted
+            video.muted = true;
+            video.play()
+              .then(() => {
+                console.log('✅ Vídeo iniciado (muted)');
+              })
+              .catch((err) => {
+                console.error('❌ Falha total no autoplay:', err);
+              });
+          });
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
-  }, [isLocked]);
+  }, [isLocked, videoUrl]);
+
+  // Log de debug
+  useEffect(() => {
+    console.log('📹 VideoEpisode montado');
+    console.log('🎬 URL do vídeo:', videoUrl);
+    console.log('🔒 isLocked:', isLocked);
+  }, [videoUrl, isLocked]);
 
   return (
     <div
@@ -125,10 +168,13 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
-            autoPlay
+            onError={handleVideoError}
+            onLoadStart={() => console.log('⏳ Iniciando carregamento do vídeo...')}
+            onLoadedMetadata={() => console.log('📊 Metadados carregados')}
+            onLoadedData={() => console.log('📦 Dados carregados')}
             playsInline
-            muted={false}
-            loop={false}
+            preload="auto"
+            controls={false}
           />
         )}
 
@@ -136,11 +182,29 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
         <div className="absolute inset-0 bg-black/10" />
 
         {/* Loading */}
-        {isLoading && !isLocked && (
+        {isLoading && !isLocked && !hasError && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
             <div className="text-white text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
-              <p>Carregando...</p>
+              <p>Carregando vídeo...</p>
+              <p className="text-xs mt-2 opacity-50">Episode {episode}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {hasError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-40">
+            <div className="text-white text-center p-4">
+              <p className="text-2xl mb-2">⚠️</p>
+              <p className="text-lg font-bold mb-2">Erro ao carregar vídeo</p>
+              <p className="text-sm opacity-70 mb-4">Verifique a URL do vídeo</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold"
+              >
+                Tentar novamente
+              </button>
             </div>
           </div>
         )}
