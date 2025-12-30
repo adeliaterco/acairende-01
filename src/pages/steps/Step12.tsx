@@ -16,9 +16,9 @@ const Step12: React.FC = () => {
     <VideoEpisode
       episode={1}
       totalEpisodes={5}
-      title="Açaí + Leitinho"
-      likes="1.4K"
-      comments="856"
+      title="Açaí c/ Leitinho"
+      likes="1.6K"
+      comments="853"
       onNext={handleNext}
       buttonText="Próximo episódio"
     />
