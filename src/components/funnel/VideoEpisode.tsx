@@ -11,8 +11,19 @@ interface VideoEpisodeProps {
   isLocked?: boolean;
   onNext: () => void;
   buttonText?: string;
-  videoUrl?: string;
+  videoUrl?: string; // Mantido como fallback, mas não recomendado
 }
+
+// ✅ MAPEAMENTO COMPLETO DE VÍDEOS POR EPISODE
+const VIDEO_MAP: Record<number, string> = {
+  0: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/01-vd-Salario.Ai_.mp4', // Step4
+  1: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4', // Step12
+  2: 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/02-vd-acainutella.mp4', // Step13
+  // Adicione mais episódios aqui conforme necessário
+  // 3: 'url_do_video_3.mp4',
+  // 4: 'url_do_video_4.mp4',
+  // 5: 'url_do_video_5.mp4',
+};
 
 const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   episode,
@@ -23,7 +34,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   extraText,
   isLocked = false,
   onNext,
-  videoUrl = 'https://nutricaoalimentos.shop/wp-content/uploads/2025/12/snaptik_7564016802565508372_v2.mp4',
+  videoUrl, // Prop mantida como fallback
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +43,9 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
   const [showEndMessage, setShowEndMessage] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [key, setKey] = useState(0);
+
+  // ✅ LÓGICA: Prioriza mapeamento interno, fallback para prop
+  const currentVideoUrl = VIDEO_MAP[episode] || videoUrl || VIDEO_MAP[1];
 
   const handleVideoEnd = useCallback(() => {
     setVideoEnded(true);
@@ -61,13 +74,12 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [videoEnded, isLocked, onNext]);
 
-  // ← CORRIGIDO: Apenas episode como trigger
+  // ✅ Reset states quando episode mudar
   useEffect(() => {
     setIsLoading(true);
     setVideoEnded(false);
     setShowEndMessage(false);
-    setKey(prev => prev + 1);
-  }, [episode]); // ← REMOVIDO videoUrl daqui
+  }, [episode]);
 
   // Desktop: Mouse wheel
   useEffect(() => {
@@ -110,25 +122,25 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Autoplay
+  // ✅ OTIMIZADO: Autoplay sem video.load() (resolve conflito iOS)
   useEffect(() => {
     if (videoRef.current && !isLocked) {
       const video = videoRef.current;
-      video.load();
       
       const playVideo = async () => {
         try {
           await video.play();
-          console.log('✅ Vídeo reproduzindo');
+          console.log('✅ Vídeo reproduzindo - Episode:', episode);
         } catch (error) {
           console.log('⚠️ Autoplay bloqueado:', error);
         }
       };
       
+      // Delay mínimo para garantir que o DOM está pronto
       const timer = setTimeout(playVideo, 100);
       return () => clearTimeout(timer);
     }
-  }, [isLocked, key]);
+  }, [isLocked, episode]);
 
   return (
     <div
@@ -137,12 +149,11 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* Video */}
+        {/* ✅ Video - SEM key prop (resolve conflito iOS) */}
         {!isLocked && (
           <video
-            key={key}
             ref={videoRef}
-            src={videoUrl}
+            src={currentVideoUrl}
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
