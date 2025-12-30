@@ -101,32 +101,21 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     }
   }, [handleNavigation]);
 
-  // Autoplay - MOBILE OPTIMIZED
+  // Autoplay
   useEffect(() => {
-    const video = videoRef.current;
-    if (video && !isLocked) {
-      // Force load
-      video.load();
-      
-      const attemptPlay = () => {
-        video.play().catch((error) => {
-          console.log('Autoplay prevented, retrying...', error);
-          // Retry with muted
-          video.muted = true;
-          video.play().catch(e => console.log('Play failed:', e));
-        });
+    if (videoRef.current && !isLocked) {
+      const playVideo = async () => {
+        try {
+          await videoRef.current?.play();
+        } catch (error) {
+          console.log('Autoplay prevented:', error);
+        }
       };
-
-      // Multiple attempts for mobile
-      const timer1 = setTimeout(attemptPlay, 100);
-      const timer2 = setTimeout(attemptPlay, 500);
       
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
+      const timer = setTimeout(playVideo, 100);
+      return () => clearTimeout(timer);
     }
-  }, [isLocked, videoUrl]);
+  }, [isLocked]);
 
   return (
     <div
@@ -135,27 +124,19 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
     >
       <div className="w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl relative overflow-hidden border-2 border-gray-800 shadow-2xl">
         
-        {/* Video - MOBILE OPTIMIZED */}
+        {/* Video */}
         {!isLocked && (
           <video
             ref={videoRef}
+            src={videoUrl}
             className="absolute inset-0 w-full h-full object-cover"
             onEnded={handleVideoEnd}
             onCanPlay={handleCanPlay}
             autoPlay
             playsInline
-            muted
             loop={false}
             preload="auto"
-            crossOrigin="anonymous"
-            webkit-playsinline="true"
-            x-webkit-airplay="allow"
-            x5-video-player-type="h5"
-            x5-video-player-fullscreen="true"
-            x5-video-orientation="portraint"
-          >
-            <source src={videoUrl} type="video/mp4" />
-          </video>
+          />
         )}
 
         {/* Dark overlay */}
@@ -235,14 +216,7 @@ const VideoEpisode: React.FC<VideoEpisodeProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <button 
-                className="text-white"
-                onClick={() => {
-                  if (videoRef.current) {
-                    videoRef.current.muted = !videoRef.current.muted;
-                  }
-                }}
-              >
+              <button className="text-white">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
